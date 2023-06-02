@@ -1,6 +1,6 @@
 <?php
     #站点名称
-    $_CONFIG["main"]["website_name"] = "离耀控制阵列";
+    $_CONFIG["main"]["website_name"] = "YaoGuang PHP Frame TestSite";
 
     #程序运行目录 (相对于站点根目录)
     $_CONFIG["main"]["current"]["directory"] = "";
