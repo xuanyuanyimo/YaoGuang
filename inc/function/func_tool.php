@@ -1,4 +1,9 @@
 <?php
+    /**
+     * 摇光PHP框架
+     * 文件类型: 扩展文件
+     * 开发日期: 2023 02 28
+     */
 
     if(!defined('IN_YGF')) {
         exit('Access Denied');  
@@ -371,4 +376,12 @@
             }
         }
         rmdir($dir);
+    }
+
+    /**
+     * 方法: 随机生成六位验证码
+     * @return Int
+     */
+    function VerCode(){
+        return rand(0 , 9) . rand(1 , 9) . rand(1 , 9) . rand(1 , 9) . rand(1 , 9) . rand(1 , 9);
     }

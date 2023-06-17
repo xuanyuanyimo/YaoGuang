@@ -31,7 +31,13 @@
     //启动摇光框架
     require dirname(__FILE__) . '/core/start.php';
 
+    //使用核心函数库
+    require dirname(__FILE__) . '/core/function.php';
+    
+
     //模板引擎
     require dirname(__FILE__) . './phptpl.inc.php';
+    //标题控制器
+    require dirname(__FILE__) . './title.inc.php';
     //引擎标签配置
     require dirname(__FILE__) . './language/lang_core.php';

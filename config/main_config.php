@@ -1,6 +1,6 @@
 <?php
     #站点名称
-    $_CONFIG["main"]["website_name"] = "YaoGuang PHP Frame TestSite";
+    $_CONFIG["main"]["website_name"] = "离耀控制阵列";
 
     #程序运行目录 (相对于站点根目录)
     $_CONFIG["main"]["current"]["directory"] = "";
@@ -34,8 +34,7 @@
     #注册api.php程序是否开启跨域 (使用Ajax的修士务必开启)
     $_CONFIG["main"]["users"]["set_up"]["cross_domain"] = true;
 
-    #本站API接口token，若调用接口，须在HTTP表头中写入: [token] => $_CONFIG["main"]["token"]
-    $_CONFIG["main"]["token"] = "鸡你 实在太美 哦baby 实在是太美 多一眼就要爆炸 近一点快被融化 鸡你实在太美 哦baby 实在是太美 多一眼就会爆炸 近一点快被融化 干嘛? 干嘛 哈哈 啊嘛嗯 哦呀嗨嗨哟";
-
     #注册登录短期次数限制
-    $_CONFIG["main"]["use_time"] = 10;
+    $_CONFIG["main"]["users"]["use_count"] = 5;
+    #注册登录最短时间限制
+    $_CONFIG["main"]["users"]["use_time"] = 3;

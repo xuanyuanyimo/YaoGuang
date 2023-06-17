@@ -4,6 +4,7 @@
      * 文件类型: 主入口文件
      * 开发日期: 2023 01 30
      */
+    
     define("PAGE_TYPE" , "INLET");
     include("./inc/common.inc.php");
 

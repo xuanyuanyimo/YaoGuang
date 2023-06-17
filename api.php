@@ -21,28 +21,8 @@
     //假如使用的mod模块为:login 或 regist
     if($_GET["method"] == "login" || $_GET["method"] == "regist"){
 
-        session_start();
-
-        if(isset($_SESSION["use_times"])){
-            if($_SESSION["use_times"] > $_CONFIG["main"]["use_time"]){
-                //实例化缓存类
-                $cache_obj = new YaoGuang\cache;
-                $session_id = session_id();
-                //检测是否存在缓存
-                if(!$cache_obj->cache_exists("use_time" , $session_id . ".phpon")){
-                    $cache_data = $cache_obj->cache_static_get_data("use_time" , $session_id . ".phpon");
-                    //限制时间还未过去
-                    if($cache_data["recovery_time"] > time()){
-                        exit(json_encode(array("return" , "请求次数过多，请等待三分钟后再试.") , JSON_UNESCAPED_UNICODE));
-                    }
-                }
-                if(!$cache_obj->set_cache("use_time" , array("session_id" => $session_id , "recovery_time" => time()+180) , $session_id . ".phpon")){
-                    exit(json_encode(array("return" , "请求次数过多，请等待三分钟后再试.") , JSON_UNESCAPED_UNICODE));
-                }
-            }
-            ++$_SESSION["use_times"];
-        }else{
-            $_SESSION["use_times"] = 1;
+        if(!Max_limit_count($_CONFIG["main"]["users"]["use_count"] , $_CONFIG["main"]["users"]["use_time"])){
+            exit(json_encode(array("return" , "错误: 登录或注册次数超出限制.") , JSON_UNESCAPED_UNICODE));
         }
 
         //如果使用http连接注册登录传入的密码参数请在前端加密成md5，这样更加安全，假如部署了安全性更高的SSL证书，可以把login或者regist方法的最后一个参数设置为false，这样后端就不会再次加密.

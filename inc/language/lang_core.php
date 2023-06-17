@@ -30,4 +30,3 @@
 
     #区块判断配置
     $if_exist_array = null;
-?>

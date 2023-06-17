@@ -15,6 +15,8 @@ class ErrorGroup
     const ERROR_NOT_STRING = "错误: 传入的数据必须是字符串.";
     const ERROR_NOT_INT = "错误: 传入的数据必须是整数.";
     const ERROR_NOT_FLOAT = "错误: 传入的数据必须是浮点数.";
+    const ERROR_NOT_BOOL = "错误: 传入的数据必须是布尔值.";
+
 
     #文件错误
     const ERROR_FILE_NOT_FOUND = "错误: 指定文件不存在.";
@@ -27,8 +29,27 @@ class ErrorGroup
 class TpPrint
 {
 
-    const ERROR_NO_REUSE = "错误: 不可重复调用问题输出方法.";
-
+    /**
+     * 静态成员方法: 信息提示模板引擎
+     * @param $template_file 信息提示模板文件路径
+     * @param $data 占位符和需替换的变量组成的数组
+     * @return String|void
+     */
+    private static function render_template($template_file , $data = array()) {
+        if (!file_exists($template_file)) {
+            throw new \Exception(ErrorGroup::ERROR_FILE_NOT_FOUND);
+        }
+    
+        $template = file_get_contents($template_file);
+    
+        foreach ($data as $placeholder => $value) {
+            $placeholder = '{' . $placeholder . '}';
+            $template = str_replace($placeholder, $value, $template);
+        }
+    
+        return $template;
+    }
+    
     /**
      * 成员方法: 输出一个操作成功或失败的模板.
      * @param String $print_message 输出内容正文.
@@ -37,9 +58,18 @@ class TpPrint
      * @return void
      */
     public static function common_print($print_message , $print_title = "错误信息" , $print_type = false){
-        if($print_type){$print_type = "face01.png";}else{$print_type = "face02.png";}
-        include("./static/template/common_print.php");
-        echo PHP_EOL;
+        if(!is_bool($print_type)){
+            throw new \Exception(ErrorGroup::ERROR_NOT_BOOL);
+        }
+        $data = array(
+            "print_title" => $print_title ,
+            "print_message" => $print_message ,
+            "print_type" => $print_type?("face01.png"):("face02.png") ,
+            "YGF_VERSION" => YGF_VERSION ,
+            "PHP_VERSION" => PHP_VERSION
+            
+        );
+        echo self::render_template("./static/template/common_print.html" , $data) . PHP_EOL;
     }
 
     /**
@@ -49,8 +79,11 @@ class TpPrint
      * @return void
      */
     public static function loading_print($jump_link , $print_title = "加载中"){
-        include("./static/template/loading_print.php");
-        echo PHP_EOL;
+        $data = array(
+            "print_title" => $print_title ,
+            "jump_link" => $jump_link
+        );
+        echo self::render_template("./static/template/loading_print.html" , $data) . PHP_EOL;
     }
 }
 
@@ -87,15 +120,15 @@ class cache
         if(!is_array($cache_data)){
             return ErrorGroup::ERROR_NOT_ARRAY;
         }
-        if(!file_exists("./cache/".$cache_name."/")){
+        if(!file_exists("./cache/" . $cache_name."/")){
             //创建缓存目录及默认文件
-            mkdir("./cache/".$cache_name);
+            mkdir("./cache/" . $cache_name);
         }
         $cache_config = array("cache_name"=>$cache_name,"cache_update_time"=>$cache_update_time);
         $cache_data["cache_regtime"] = time();
         
-        if ( file_put_contents("./cache/".$cache_name."/config.phpon",serialize($cache_config)) != false
-        && file_put_contents("./cache/$cache_name/$cache_file",serialize($cache_data)) != false ){
+        if ( file_put_contents("./cache/".$cache_name."/config.phpon" , serialize($cache_config)) != false
+        && file_put_contents("./cache/$cache_name/$cache_file" , serialize($cache_data)) != false ){
             return $cache_data;
         }
         return false;
@@ -267,6 +300,35 @@ class DbOperation
         }
         return false;
     }
+
+    /**
+     * 成员方法：更新数据表中的数据(更新指定字段).
+     * @param String $db_table_name 数据表名.
+     * @param String $field_name 要更新的字段名.
+     * @param String $field_value 要更新的字段值.
+     * @param Array $db_where_array 更新条件数组 比如指定id为1的行
+     * 示例: array("id" => "1");
+     * @return Int|Bool 更新成功则返回更新的记录数，失败则返回false.
+     */
+    public function db_update_field($db_table_name, $field_name, $field_value, $db_where_array) {
+        $params = array();
+        $where_str = '';
+        foreach ($db_where_array as $key => $value) {
+            $where_str .= $key . "=:" . $key . " AND ";
+            $params[":" . $key] = $value;
+        }
+        $where_str = substr($where_str, 0, strlen($where_str) - 5);
+        $params[":" . $field_name] = $field_value;
+        $sql = "UPDATE " . $db_table_name . " SET " . $field_name . "=:" . $field_name . " WHERE " . $where_str . ";";
+        $stmt = $this->conn->prepare($sql);
+        foreach ($params as $key => &$value) {
+            $stmt->bindParam($key, $value);
+        }
+        if ($stmt->execute()) {
+            return $stmt->rowCount();
+        }
+        return false;
+    }
  
     /**
      * 成员方法: 在数据表中查询数据.
@@ -431,7 +493,7 @@ EOF;
     /**
      * 成员方法: 执行一段有返回的SQL语句 [查询].
      * @param String $sql SQL语句.
-     * @return Bool SQL语句被成功的执行则返回true，否则返回false.
+     * @return false|Array SQL语句被成功的执行则返回查询结果，否则返回false.
      */
     public function db_sql_query($sql){
         //将SQL语句执行情况写入日志
@@ -695,25 +757,25 @@ function ErrorHandler($errno, $errstr, $errfile, $errline){
         case E_USER_ERROR:
             $error = "错误(ERROR): [$errno] -> $errstr<br/>\n产生错误的文件: $errfile [行号: $errline]";
             $log_obj->log_write(null , array($error));
-            exit(TpPrint::common_print($error , "错误提示 - ".YGF));
+            exit(TpPrint::common_print($error , "错误提示 - " . YGF));
             break;
     
         case E_USER_WARNING:
             $error = "警告(WARNING): [$errno] -> $errstr<br/>\n产生错误的文件: $errfile [行号: $errline]";
             $log_obj->log_write(null , array($error));
-            exit(TpPrint::common_print($error , "错误提示 - ".YGF));
+            exit(TpPrint::common_print($error , "错误提示 - " . YGF));
             break;
 
         case E_USER_NOTICE:
             $error = "注意(NOTICE): [$errno] -> $errstr<br/>\n产生错误的文件: $errfile [行号: $errline]";
             $log_obj->log_write(null , array($error));
-            exit(TpPrint::common_print($error , "错误提示 - ".YGF));
+            exit(TpPrint::common_print($error , "错误提示 - " . YGF));
             break;
 
         default:
             $error = "未知错误类型(Unknown error type): [$errno] -> $errstr<br/>\n产生错误的文件: $errfile [行号: $errline]";
             $log_obj->log_write(null , array($error));
-            echo(TpPrint::common_print($error , "错误提示 - ".YGF));
+            echo(TpPrint::common_print($error , "错误提示 - " . YGF));
             break;
     }
     return true;
@@ -725,6 +787,6 @@ function ErrorHandler($errno, $errstr, $errfile, $errline){
 function ExceptionHandler($exception) {
     //日志处理类实例化
     $log_obj = new LogHandler;
-    $log_obj->log_write(null , array("程序异常: ".$exception->getMessage()));
-    echo(TpPrint::common_print("未捕获异常: ".$exception->getMessage() , "异常提示 - ".YGF));
+    $log_obj->log_write(null , array("程序异常: " . $exception->getMessage()));
+    echo(TpPrint::common_print("未捕获异常: " . $exception->getMessage() , "异常提示 - " . YGF));
 }
