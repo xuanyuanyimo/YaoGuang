@@ -1,6 +1,6 @@
 <?php
     #站点名称
-    $_CONFIG["main"]["website_name"] = "课程管理系统";
+    $_CONFIG["main"]["website_name"] = "摇光PHP框架";
 
     #程序运行目录 (相对于站点根目录)
     $_CONFIG["main"]["current"]["directory"] = "";
