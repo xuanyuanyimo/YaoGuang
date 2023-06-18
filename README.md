@@ -97,3 +97,11 @@ switch($mods){
 #### 关于这段代码:
 - 这段代码将使用户在访问`https://www.youdoname.com/yourpage.html`时，服务器将同目录的`./yourflie.dat`文件发送给用户的浏览器 (用户浏览器会弹出下载提示)
 - `fileflow_download()`函数是`inc/function`目录下的扩展文件`func_tool.php`函数库的一部分，此函数用于以文件流形式将文件发送给用户浏览器
+
+#### 除此之外，您可以通过将`fileflow_download("./yourfile.dat");`替换为:
+```
+tpl::phptpl_file( "./template/" . $_CONFIG["main"]["template"] . "/header.html" , $str_replace_array , null , null , $if_exist_array , null , true );
+tpl::phptpl_file( "./template/" . $_CONFIG["main"]["template"] . "/body.html" , $str_replace_array , null , null , $if_exist_array , null , true );
+tpl::phptpl_file( "./template/" . $_CONFIG["main"]["template"] . "/footer.html" , $str_replace_array , null , null , $if_exist_array , null , true );
+```
+#### 若入口文件聚合的多个页面同时引用了`header.html`或`footer.html`，您就可以修改这两个文件而不用每个页面文件都修改一次了
