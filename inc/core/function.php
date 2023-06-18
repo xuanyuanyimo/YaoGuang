@@ -14,16 +14,16 @@
         $cache = new YaoGuang\cache();
 
         if (!$cache->cache_exists($session_id)) {
-            $cache->set_cache($session_id, array("count" => 0), $session_id . ".phpon", $time_limit);
+            $cache->set_cache($session_id, array("count" => 0), $session_id . ".json", $time_limit);
         }
 
-        $count = $cache->cache_static_get_data($session_id, $session_id . ".phpon")["count"];
+        $count = $cache->cache_static_get_data($session_id, $session_id . ".json")["count"];
 
         if ($count >= $max_count) {
             return false;
         }
 
-        $cache->set_cache($session_id, array("count" => $count + 1), $session_id . ".phpon", $time_limit);
+        $cache->set_cache($session_id, array("count" => $count + 1), $session_id . ".json", $time_limit);
 
         return true;
     }
