@@ -6,6 +6,50 @@
 ##### 摇光框架是一个基于MVC的轻量、高效、灵活、安全的PHP框架，借助此框架，可以快速构建后端站点，且便于维护，可方便扩展.
 ##### 此框架开发于2023年1月30日 ~~前身是一个名为玄元框架的不规则shit山聚合体...~~
 
+## 目录结构
+```
+(-D) Root +
+{
+    (-D) config + 配置目录
+    {
+        main_config.php 框架主配置文件
+    }
+    (-D) inc + 主程序引用目录
+    {
+        (-D) core + 框架核心目录
+        {
+            (-F) function.php 框架核心函数文件
+            (-F) initial.php 框架初始化文件
+            (-F) start.php 框架启动文件
+        }
+        (-D) function + 框架扩展及函数库目录
+        {
+            (-F) func_login.php 用户管理扩展文件
+            (-F) func_mail.php 站内邮件扩展文件
+            (-F) func_tool.php 函数库扩展文件
+        }
+        (-D) language - 框架模板引擎占位符配置目录
+        {...}
+        (-D) namespace + 框架命名空间目录
+        {
+            (-F) YaoGuang.php 框架核心功能文件
+        }
+        (-F) common.inc.php 通用接引文件 在框架目录下任何需要接入框架的程序文件都需要引用此文件方可正常调用框架
+        (-F) phptpl.inc.php 模板引擎文件
+        (-F) title.inc.php 各页面标题定义文件
+    }
+    (-D) static - 框架默认提示信息模板目录
+    {...}
+    (-D) cache 缓存目录 此目录将在使用YaoGuang\cache类后自动生成
+    (-D) data 数据目录 此目录将在使用YaoGuang\UploadData类后自动生成
+    (-D) log 日志目录 此目录将在使用YaoGuang\LogHandler类后自动生成
+    (-D) template 模板目录 此目录的文件将通过模板引擎处理后发往前端
+    (-F) 404.php HTTP404 错误页
+    (-F) 502.php HTTP502 错误页
+    (-F) api.php 接口文件 通常用于前后端通信，使用ajax前需在主配置文件中允许跨域请求
+    (-F) index.php 主入口文件 定义页面入口
+}
+```
 ## 在使用之前
 
 ### 请确保服务器已安装以下PHP扩展:
