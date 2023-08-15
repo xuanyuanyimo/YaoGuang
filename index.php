@@ -11,7 +11,7 @@
     if(!isset($_GET["mods"]) || is_null($_GET["mods"])){
         $_GET["mods"] = "index";
     }
-    $mods = $_GET["mods"];
+    $mods = str_replace("/" , "" , $_GET["mods"]);
 
     YaoGuang\PageOperation::jump_home();
 
@@ -19,14 +19,15 @@
         case 'index':
             //主页
             //include...
-            tpl::phptpl_file( "./template/" . $_CONFIG["main"]["template"] . "/index.html" , $str_replace_array , null , null , $if_exist_array , null , true );
-
+            // tpl::phptpl_file( "./template/" . $_CONFIG["main"]["template"] . "/index.html" , $str_replace_array , null , null , $if_exist_array , null , true );
+            $obj = new MinecraftServerQuery;
+            print_r($obj->ReturnServerData());
             break;
         default:
-            $file = "./template/".$_CONFIG["main"]["template"] . "/" . $mods . ".html";
+            $file = "./template/" . $_CONFIG["main"]["template"] . "/" . $mods . ".html";
             if(file_exists($file)){
                 //模板
-                tpl::phptpl_file( $file , $str_replace_array , null , null , null , null , true );
+                tpl::phptpl_file( $file , $str_replace_array , null , null , $if_exist_array , null , true );
             }else{
                 http_response_code(404);
             }

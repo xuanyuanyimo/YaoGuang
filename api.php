@@ -65,6 +65,9 @@
                 $user_obj->regist($_POST["username"] , $_POST["password"] , $_POST["email"]);
             }
             break;
+        case 'test':
+            echo (isset($_POST["param"])) ? "Your Post Param Is " . $_POST["param"] : "You Hav't To Conveying Post Param";
+            break;
         default:
             exit(json_encode(array("return" , "错误: method不正确.") , JSON_UNESCAPED_UNICODE));
             break;
