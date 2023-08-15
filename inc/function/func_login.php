@@ -9,6 +9,12 @@
         exit('Access Denied');  
     }
 
+    $_Extend_INFO["func_login"] = array(
+        "ExtendName" => "func_login" ,
+        "ExtendVersion" => 2.5 ,
+        "ExtendNecessity" => null
+    );
+
     /**
      * 用户处理类: 使用数据库处理用户信息，可登录注册.
      * 特别注意: 在传入参数之前，请确认是否将特殊字符(如单引号和双引号)转义或删除，否则可能会生成注入点.
@@ -29,6 +35,8 @@
         const ERROR_UNKNOWN = "ERROR_UNKNOWN";
         #未知错误
         const UNKNOWN_METHOD = "UNKNOWN_METHOD";
+        #邮箱被占用
+        const ERROR_SAMEMAIL = "ERROR_SAMEMAIL";
 
         #余额不足
         const MONEY_LACK = "MONEY_LACK";
@@ -43,13 +51,8 @@
          * @return void
          */
         public function __construct(){
-            $this->database_obj = new YaoGuang\DbOperation;
 
-            //是否使用自定义配置
-            if(isset($GLOBALS["_CONFIG"]["func_login"]) && is_array($GLOBALS["_CONFIG"]["func_login"])){
-                //取自定义表名
-                $this->database_table = $GLOBALS["_CONFIG"]["func_login"]["database_table"];
-            }
+            $this->database_obj = new YaoGuang\DbOperation;
 
             if(!$this->database_obj->db_exists_table($this->database_table)){
                 $this->database_obj->db_create_table($this->database_table ,
@@ -58,7 +61,10 @@
                 "money01" => array("DataType" => "INT" , "DataLength" => 16) ,
                 "money02" => array("DataType" => "INT" , "DataLength" => 16) ,
                 "money03" => array("DataType" => "INT" , "DataLength" => 16) ,
-                "money04" => array("DataType" => "INT" , "DataLength" => 16)
+                "money04" => array("DataType" => "INT" , "DataLength" => 16) ,
+                "introduce" => array("DataType" => "TEXT" , "DataLength" => 512) ,
+                "other" => array("DataType" => "TEXT" , "DataLength" => 512)
+                # 这个字段"other"的本意是使这里可以存储更多可以在数据表已经被创建过后但仍需增加字段的数据
                 )
             );
             }
@@ -77,11 +83,15 @@
          * 成员方法: 登录验证 设置cookie及创建登录验证缓存.
          * @param String $username 设置登录验证cookie的用户名.
          * @param Bool $online 是否设置为在线状态 (可选).
+         * @param Int $overtime 设置登录状态cookie的过期时间，单位: 秒
          * @return void
          */
-        public function set_cookie($username , $online = true){
+        public function set_cookie($username , $online = true , $overtime = null){
             $time = time();
-            $overtime = $time + 86400;
+            if(is_null($overtime)){
+                $overtime = 0;
+            }
+
             $token = $this->rand_token();
     
             //设置cookie
@@ -150,26 +160,43 @@
     
         /**
          * 成员方法: 登录.
-         * @param String $username 登录的用户名.
+         * @param Int|String $username 登录的用户名或UID.
          * @param String $password 登录的密码.
          * @param Bool $encode 是否需要加密为md5再处理 (可选).
+         * @param Int $overtime 登录验证cookie过期时间，单位: 秒 (可选).
          * @return String 根据UserHandle类中的成员常量组判断登录状态，若返回SUCCESS_LOGIN则代表登录成功，依次类推.
          */
-        public function login($username , $password , $encode = true){
+        public function login($username , $password , $encode = true , $overtime = null){
     
-            if($encode){$password = md5($password);}
+            ($encode)?($password = md5($password)):(true);
 
             if ($this->ver_login()){
                 return $this::ERROR_LOGGED;
             }
 
             $userdata = $this->database_obj->db_query_data($this->database_table , "Byusername" , $username);
+            $userQueryMethod = "username";
+            //如果用户名模式无法搜索到用户，尝试将之作为id搜索
+            if($userdata == []){
+                $userdata = $this->database_obj->db_query_data($this->database_table , "Byid" , $username);
+                $userQueryMethod = "id";
+            }
+            //如果用户名模式无法搜索到用户，尝试将之作为邮箱地址搜索
+            if($userdata == []){
+                $userdata = $this->database_obj->db_query_data($this->database_table , "Byemail" , $username);
+                $userQueryMethod = "email";
+            }
             
             //判断是否有该用户存在
             if ($userdata != []){
                 //判断md5加密后用户输入的密码是否于内部数据匹配
                 if($password == $userdata[0]["password"]){
                     //密码正确
+                    //判断是否需要保留自定义时长的登录信息
+                    if(is_null($overtime)){
+                        $this->set_cookie($username , true , $overtime);
+                        return true;
+                    }
                     //创建cookie和验证文件
                     $this->set_cookie($username);
                     return true;
@@ -192,18 +219,25 @@
          */
         public function regist($username , $password , $email , $encode = true){
     
-            if($encode){$password = md5($password);}
+            ($encode)?($password = md5($password)):(true);
 
             if ($this->ver_login()){
                 return $this::ERROR_LOGGED;
             }
 
             $userdata = $this->database_obj->db_query_data($this->database_table , "Byusername" , $username);
+            $userdata_id = $this->database_obj->db_query_data($this->database_table , "Byid" , $username);
+            $userdata_email = $this->database_obj->db_query_data($this->database_table , "Byemail" , $username);
 
-            if ($userdata != []){
+            if ($userdata != [] || $userdata_id != [] || $userdata_email != []){
                 //用户存在
                 return $this::ERROR_SAMENAME;
             }else{
+                //检测邮箱是否已经被占用
+                if($userdata = $this->database_obj->db_query_data($this->database_table , "Byemail" , $email) != []){
+                    //已被占用
+                    return $this::ERROR_SAMEMAIL;
+                }
                 //用户不存在，插入数据
                 $this->database_obj->db_insert_data($this->database_table ,
                 array("username" => $username , "password" => $password , "email" => $email ,
@@ -212,7 +246,9 @@
                 "money01" => $GLOBALS["_CONFIG"]["main"]["users"]["money"]["01"]["initial"] ,
                 "money02" => $GLOBALS["_CONFIG"]["main"]["users"]["money"]["02"]["initial"] ,
                 "money03" => $GLOBALS["_CONFIG"]["main"]["users"]["money"]["03"]["initial"] ,
-                "money04" => $GLOBALS["_CONFIG"]["main"]["users"]["money"]["04"]["initial"]
+                "money04" => $GLOBALS["_CONFIG"]["main"]["users"]["money"]["04"]["initial"] ,
+                "introduce" => $GLOBALS["_CONFIG"]["main"]["users"]["introduce"] ,
+                "other" => "[]"
                 )
         );
                 $userdata = $this->database_obj->db_query_data($this->database_table , "Byusername" , $username);
@@ -227,6 +263,37 @@
             }
         }
 
+        /**
+         * 成员方法: 修改用户的密码
+         * @param Int|String $username 用户名或UID或邮箱地址
+         * @param String $password 用户的新密码
+         * @param Bool $encode 是否需要加密为md5再处理 (可选).
+         * @return Bool 成功编辑则返回true，失败返回false，如果是其他情况，则会返回本类的某些常量.
+         */
+        public function setPasswd($username , $password , $encode = true){
+
+            ($encode)?($password = md5($password)):(true);
+
+            $userdata = $this->database_obj->db_query_data($this->database_table , "Byusername" , $username);
+            $userQueryMethod = "username";
+            //如果用户名模式无法搜索到用户，尝试将之作为id搜索
+            if($userdata == []){
+                $userdata = $this->database_obj->db_query_data($this->database_table , "Byid" , $username);
+                $userQueryMethod = "id";
+            }
+            //如果用户名模式无法搜索到用户，尝试将之作为邮箱地址搜索
+            if($userdata == []){
+                $userdata = $this->database_obj->db_query_data($this->database_table , "Byemail" , $username);
+                $userQueryMethod = "email";
+            }
+
+            if($userdata != []){
+                return ($this->database_obj->db_update_field($this->database_table , "password" , $password , array($userQueryMethod => $username)) !== false)?(true):(false);
+            }else{
+                return $this::ERROR_NO_USER;
+            }
+
+        }
         /**
          * 成员方法: 编辑用户的积分
          * @param Int|String $username 需要操作的用户的用户名或用户UID
@@ -381,5 +448,56 @@
                 return $this::ERROR_NO_USER;
             }
         }
+
+        /**
+         * 成员方法: 获取用户额外数据
+         * @param Int|String $username 用户名或用户UID
+         * @return Array 返回用户额外数据
+         */
+        public function get_other_data($username){
+            
+            $userdata = $this->database_obj->db_query_data($this->database_table , "Byusername" , $username);
+            //如果用户名模式无法搜索到用户，尝试将之作为id搜索
+            if($userdata == []){
+                $userdata = $this->database_obj->db_query_data($this->database_table , "Byid" , $username);
+            }
+
+            //判断是否有该用户存在
+            if ($userdata != []){
+                //存在
+                //检查是否存在数据
+                if(!isset($userdata["other"]) || $userdata["other"] == []){
+                    return array();
+                }
+                return json_decode($userdata["other"] , true);
+            }else{
+                return $this::ERROR_NO_USER;
+            }
+        }
+
+        /**
+         * 成员方法: 写入用户额外数据
+         * @param Int|String $username 用户名或用户UID
+         * @param Array $otherData 用户额外数据
+         * @return Bool|String 若成功写入用户额外数据返回true，失败则返回false。其他情况，则会返回本类的某些常量.
+         */
+        public function set_other_data($username , $otherData){
+
+            $userdata = $this->database_obj->db_query_data($this->database_table , "Byusername" , $username);
+            $userQueryMethod = "username";
+            //如果用户名模式无法搜索到用户，尝试将之作为id搜索
+            if($userdata == []){
+                $userdata = $this->database_obj->db_query_data($this->database_table , "Byid" , $username);
+                $userQueryMethod = "id";
+            }
+
+            //判断是否有该用户存在
+            if ($userdata != []){
+                return ($this->database_obj->db_update_field($this->database_table , "other" , json_encode($otherData , JSON_UNESCAPED_UNICODE) , array($userQueryMethod => $username)) !== false)?(true):(false);
+            }else{
+                return $this::ERROR_NO_USER;
+            }
+        }
+
 
     }

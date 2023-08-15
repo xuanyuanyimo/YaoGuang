@@ -9,6 +9,12 @@
         exit('Access Denied');  
     }
 
+    $_Extend_INFO["func_tool"] = array(
+        "ExtendName" => "func_tool" ,
+        "ExtendVersion" => 3.1 ,
+        "ExtendNecessity" => null
+    );
+
     /**
      * 方法: 获取当前客户端的IP地址.
      * @return Mixed 若成功获取客户端IP，则返回其IPv4地址，否则返回false.
@@ -57,8 +63,8 @@
 
     /**
      * 方法: 获取字符串中的网址.
-     * @param String $str 包含链接的字符串，比如一个html文档.
-     * @return Array 返回的数组的 0 号元素为http链接， 1 号元素为https链接.
+     * @param String $str 包含链接的字符串，比如一个 html 文档.
+     * @return Array 返回的数组的 0 号元素为 http 协议链接， 1 号元素为 https 协议链接.
      */
     function getUrl($str){
         preg_match_all('/http:[\/]{2}[a-z]+[.]{1}[a-z\d\-]+[.]{1}[a-z\d]*[\/]*[A-Za-z\d]*[\/]*[A-Za-z\d]*/' , $str , $http_addr);
@@ -76,10 +82,48 @@
      * @param String $mail_text 邮件正文，可添加html代码.
      * @return String 从度仙门主站返回的json数据，包含邮件发送情况.
      */
-    function DXM_SendMail($mail_address , $mail_username , $mail_subject , $mail_text){
-        $token = $GLOBALS["_CONFIG"]["main"]["mail"]["api_token"];
-        return file_get_contents("https://www.duxianmen.com/api/mail/index.php?mail_address=".$mail_address."&mail_subject=".urlencode($mail_subject)."&username=".urlencode($mail_username)."&mail_text=".urlencode($mail_text)."&token=".$token);
+    function submitEmail($mail_address , $mail_subject , $mail_username , $mail_text , $token = null) {
+        //如果没有定义token，则直接使用默认token
+        if(is_null($token)){
+            $token = $GLOBALS["_CONFIG"]["api"]["email"]["token"];
+        }
+
+        // 构建 POST 数据
+        $postData = array(
+            'mail_address' => $mail_address,
+            'mail_subject' => $mail_subject,
+            'username' => $mail_username,
+            'mail_text' => $mail_text
+        );
+    
+        // 初始化 cURL
+        $ch = curl_init();
+    
+        // 设置 cURL 选项
+        curl_setopt($ch, CURLOPT_URL, 'https://www.duxianmen.com/api/email/?token=' . $token);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    
+        // 执行 cURL 请求
+        $response = curl_exec($ch);
+    
+        // 检查是否有错误发生
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            return 'Error: ' . $error;
+        }
+    
+        // 关闭 cURL
+        curl_close($ch);
+    
+        // 返回服务器响应
+        return $response;
     }
+    
 
     /**
      * 方法: 根据时间返回问候内容. 时区为中国上海.
@@ -130,7 +174,7 @@
     /**
      * 方法: 以POST请求URL.
      * @param String $url 目标HTTP地址.
-     * @param Array $data 格式为索引数组的POST数据.
+     * @param Array $data 格式为关联数组的POST数据.
      * @return String 返回内容.
      */
     function file_post_contents($url , $data){

@@ -9,13 +9,22 @@
         exit('Access Denied');  
     }
 
+    $_Extend_INFO["func_mail"] = array(
+        "ExtendName" => "func_mail" ,
+        "ExtendVersion" => 1.0 ,
+        "ExtendNecessity" => null
+    );
+
     /**
      * 站内邮件类: 站内邮件系统核心
-     * 特别注意: 在传入参数之前，请确认是否将特殊字符(如单引号和双引号)转义或删除，否则可能会生成注入点.
+     * 特别注意: 
+     * 1. 在传入参数之前，请确认是否将特殊字符(如单引号和双引号)转义或删除，否则可能会生成注入点.
+     * 2. 本组件必须在安装了用户管理组件 (func_login.php) 的情况下使用.
      */
     class MailInSite{
 
-        public const ERROR_UNKNOW = "错误: 未知错误，请检查数据库是否异常.";
+        #未知错误
+        public const ERROR_UNKNOW = "ERROR_UNKNOW";
 
         public $database_obj;
 

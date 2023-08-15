@@ -15,12 +15,8 @@
                 //引入扩展
                 require_once($dir . $value);
                 $extendFile = str_replace(".php" , "" , $value);
-                $extendFilePath = "./config/" . $extendFile . "_config.php";
-                //检测扩展是否存在自定义配置文件
-                if(file_exists($extendFilePath)){
-                    require_once($extendFilePath);
-                    define($extendFile . "ExtendConfig" , true);
-                }
+                //扩展表
+                $GLOBALS["_ExtendList"][$extendFile] = $value;
             }
         }
     }
@@ -36,8 +32,8 @@
     
 
     //模板引擎
-    require dirname(__FILE__) . './phptpl.inc.php';
+    require dirname(__FILE__) . '/phptpl.inc.php';
     //标题控制器
-    require dirname(__FILE__) . './title.inc.php';
+    require dirname(__FILE__) . '/title.inc.php';
     //引擎标签配置
-    require dirname(__FILE__) . './language/lang_core.php';
+    require dirname(__FILE__) . '/language/lang_core.php';

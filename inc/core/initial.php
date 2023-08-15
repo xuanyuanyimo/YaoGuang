@@ -10,7 +10,7 @@ if (PHP_VERSION < '5.3') {
 require_once("./config/main_config.php");
 
 //摇光框架版本
-define('YGF_VERSION', 1.110);
+define('YGF_VERSION', 1.13);
 
 //检测是否存在template模板目录
 if(!file_exists("template")){
